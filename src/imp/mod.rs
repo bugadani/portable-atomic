@@ -79,8 +79,14 @@ mod atomic128;
 // Lock-based fallback implementations
 
 #[cfg(feature = "fallback")]
-#[cfg_attr(portable_atomic_no_cfg_target_has_atomic, cfg(not(portable_atomic_no_atomic_cas)))]
-#[cfg_attr(not(portable_atomic_no_cfg_target_has_atomic), cfg(target_has_atomic = "ptr"))]
+#[cfg_attr(
+    portable_atomic_no_cfg_target_has_atomic,
+    cfg(any(not(portable_atomic_no_atomic_cas), portable_atomic_xtensa_cas))
+)]
+#[cfg_attr(
+    not(portable_atomic_no_cfg_target_has_atomic),
+    cfg(any(target_has_atomic = "ptr", portable_atomic_xtensa_cas))
+)]
 #[cfg_attr(
     not(test),
     cfg(not(any(
@@ -154,7 +160,10 @@ mod fallback;
     cfg(any(
         target_arch = "avr",
         target_arch = "msp430",
-        all(feature = "critical-section", any(test, portable_atomic_no_atomic_cas)),
+        all(
+            feature = "critical-section",
+            any(test, all(portable_atomic_no_atomic_cas, not(portable_atomic_xtensa_cas))),
+        ),
         portable_atomic_unsafe_assume_single_core,
         portable_atomic_unsafe_assume_privileged,
     ))
@@ -164,7 +173,10 @@ mod fallback;
     cfg(any(
         target_arch = "avr",
         target_arch = "msp430",
-        all(feature = "critical-section", any(test, not(target_has_atomic = "ptr"))),
+        all(
+            feature = "critical-section",
+            any(test, all(not(target_has_atomic = "ptr"), not(portable_atomic_xtensa_cas))),
+        ),
         portable_atomic_unsafe_assume_single_core,
         portable_atomic_unsafe_assume_privileged,
     ))
@@ -205,6 +217,7 @@ cfg_sel!({
                     portable_atomic_unsafe_assume_single_core,
                 ),
                 portable_atomic_no_atomic_cas,
+                not(portable_atomic_xtensa_cas),
             ),
         )))
     )]
@@ -222,6 +235,7 @@ cfg_sel!({
                     portable_atomic_unsafe_assume_single_core,
                 ),
                 not(target_has_atomic = "ptr"),
+                not(portable_atomic_xtensa_cas),
             ),
         )))
     )]
@@ -353,7 +367,11 @@ cfg_sel!({
         cfg(any(
             target_arch = "avr",
             target_arch = "msp430",
-            all(feature = "critical-section", portable_atomic_no_atomic_cas),
+            all(
+                feature = "critical-section",
+                portable_atomic_no_atomic_cas,
+                not(portable_atomic_xtensa_cas),
+            ),
             portable_atomic_unsafe_assume_single_core,
         ))
     )]
@@ -362,7 +380,11 @@ cfg_sel!({
         cfg(any(
             target_arch = "avr",
             target_arch = "msp430",
-            all(feature = "critical-section", not(target_has_atomic = "ptr")),
+            all(
+                feature = "critical-section",
+                not(target_has_atomic = "ptr"),
+                not(portable_atomic_xtensa_cas),
+            ),
             portable_atomic_unsafe_assume_single_core,
         ))
     )]
@@ -376,11 +398,17 @@ cfg_sel!({
     // no core 64-bit atomic & has CAS => use lock-base fallback
     #[cfg_attr(
         portable_atomic_no_cfg_target_has_atomic,
-        cfg(all(feature = "fallback", not(portable_atomic_no_atomic_cas)))
+        cfg(all(
+            feature = "fallback",
+            any(not(portable_atomic_no_atomic_cas), portable_atomic_xtensa_cas),
+        ))
     )]
     #[cfg_attr(
         not(portable_atomic_no_cfg_target_has_atomic),
-        cfg(all(feature = "fallback", target_has_atomic = "ptr"))
+        cfg(all(
+            feature = "fallback",
+            any(target_has_atomic = "ptr", portable_atomic_xtensa_cas),
+        ))
     )]
     {
         pub(crate) use self::fallback::{AtomicI64, AtomicU64};
@@ -523,7 +551,11 @@ cfg_sel!({
         cfg(any(
             target_arch = "avr",
             target_arch = "msp430",
-            all(feature = "critical-section", portable_atomic_no_atomic_cas),
+            all(
+                feature = "critical-section",
+                portable_atomic_no_atomic_cas,
+                not(portable_atomic_xtensa_cas),
+            ),
             portable_atomic_unsafe_assume_single_core,
         ))
     )]
@@ -532,7 +564,11 @@ cfg_sel!({
         cfg(any(
             target_arch = "avr",
             target_arch = "msp430",
-            all(feature = "critical-section", not(target_has_atomic = "ptr")),
+            all(
+                feature = "critical-section",
+                not(target_has_atomic = "ptr"),
+                not(portable_atomic_xtensa_cas),
+            ),
             portable_atomic_unsafe_assume_single_core,
         ))
     )]
@@ -543,11 +579,17 @@ cfg_sel!({
     // no core 128-bit atomic & has CAS => use lock-base fallback
     #[cfg_attr(
         portable_atomic_no_cfg_target_has_atomic,
-        cfg(all(feature = "fallback", not(portable_atomic_no_atomic_cas)))
+        cfg(all(
+            feature = "fallback",
+            any(not(portable_atomic_no_atomic_cas), portable_atomic_xtensa_cas),
+        ))
     )]
     #[cfg_attr(
         not(portable_atomic_no_cfg_target_has_atomic),
-        cfg(all(feature = "fallback", target_has_atomic = "ptr"))
+        cfg(all(
+            feature = "fallback",
+            any(target_has_atomic = "ptr", portable_atomic_xtensa_cas),
+        ))
     )]
     {
         pub(crate) use self::fallback::{AtomicI128, AtomicU128};
